@@ -9,7 +9,9 @@
 >
 	<x-sub v-for="note in conversation" :key="note.id" :note="note"/>
 	<x-sub :note="appearNote.reply" class="reply-to" v-if="appearNote.reply"/>
-	<div class="pinned" v-if="pinned"><fa :icon="faThumbtack"/> {{ $t('pinnedNote') }}</div>
+	<div class="info" v-if="pinned"><fa :icon="faThumbtack"/> {{ $t('pinnedNote') }}</div>
+	<div class="info" v-if="appearNote._prId_"><fa :icon="faBullhorn"/> {{ $t('promotion') }}<button class="_textButton hide" @click="readPromo()">{{ $t('hideThisNote') }} <fa :icon="faTimes"/></button></div>
+	<div class="info" v-if="appearNote._featuredId_"><fa :icon="faBolt"/> {{ $t('featured') }}</div>
 	<div class="renote" v-if="isRenote">
 		<mk-avatar class="avatar" :user="note.user"/>
 		<fa :icon="faRetweet"/>
@@ -47,7 +49,7 @@
 						<x-media-list :media-list="appearNote.files"/>
 					</div>
 					<x-poll v-if="appearNote.poll" :note="appearNote" ref="pollViewer"/>
-					<x-url-preview v-for="url in urls" :url="url" :key="url" :compact="true" class="url-preview"/>
+					<mk-url-preview v-for="url in urls" :url="url" :key="url" :compact="true" class="url-preview"/>
 					<div class="renote" v-if="appearNote.renote"><x-note-preview :note="appearNote.renote"/></div>
 				</div>
 			</div>
@@ -77,14 +79,14 @@
 			<div class="deleted" v-if="appearNote.deletedAt != null">{{ $t('deleted') }}</div>
 		</div>
 	</article>
-	<x-sub v-for="note in replies" :key="note.id" :note="note"/>
+	<x-sub v-for="note in replies" :key="note.id" :note="note" class="reply"/>
 </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
-import { faStar, faLink, faExternalLinkSquareAlt, faPlus, faMinus, faRetweet, faReply, faReplyAll, faEllipsisH, faHome, faUnlock, faEnvelope, faThumbtack, faBan, faQuoteRight } from '@fortawesome/free-solid-svg-icons';
-import { faCopy, faTrashAlt, faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
+import { faBolt, faTimes, faBullhorn, faStar, faLink, faExternalLinkSquareAlt, faPlus, faMinus, faRetweet, faReply, faReplyAll, faEllipsisH, faHome, faUnlock, faEnvelope, faThumbtack, faBan, faQuoteRight, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCopy, faTrashAlt, faEdit, faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
 import { parse } from '../../mfm/parse';
 import { sum, unique } from '../../prelude/array';
 import i18n from '../i18n';
@@ -95,7 +97,7 @@ import XReactionsViewer from './reactions-viewer.vue';
 import XMediaList from './media-list.vue';
 import XCwButton from './cw-button.vue';
 import XPoll from './poll.vue';
-import XUrlPreview from './url-preview.vue';
+import MkUrlPreview from './url-preview.vue';
 import MkReactionPicker from './reaction-picker.vue';
 import pleaseLogin from '../scripts/please-login';
 import { focusPrev, focusNext } from '../scripts/focus';
@@ -113,7 +115,7 @@ export default Vue.extend({
 		XMediaList,
 		XCwButton,
 		XPoll,
-		XUrlPreview,
+		MkUrlPreview,
 	},
 
 	props: {
@@ -140,7 +142,7 @@ export default Vue.extend({
 			replies: [],
 			showContent: false,
 			hideThisNote: false,
-			faPlus, faMinus, faRetweet, faReply, faReplyAll, faEllipsisH, faHome, faUnlock, faEnvelope, faThumbtack, faBan
+			faEdit, faBolt, faTimes, faBullhorn, faPlus, faMinus, faRetweet, faReply, faReplyAll, faEllipsisH, faHome, faUnlock, faEnvelope, faThumbtack, faBan
 		};
 	},
 
@@ -263,6 +265,13 @@ export default Vue.extend({
 	},
 
 	methods: {
+		readPromo() {
+			(this as any).$root.api('promo/read', {
+				noteId: this.appearNote.id
+			});
+			this.hideThisNote = true;
+		},
+
 		capture(withHandler = false) {
 			if (this.$store.getters.isSignedIn) {
 				this.connection.send(document.body.contains(this.$el) ? 'sn' : 's', { id: this.appearNote.id });
@@ -383,7 +392,7 @@ export default Vue.extend({
 				}]
 				source: this.$refs.renoteButton,
 				viaKeyboard
-			}).then(this.focus);
+			});
 		},
 
 		renoteDirectly() {
@@ -451,6 +460,22 @@ export default Vue.extend({
 			});
 		},
 
+		delEdit() {
+			this.$root.dialog({
+				type: 'warning',
+				text: this.$t('deleteAndEditConfirm'),
+				showCancelButton: true
+			}).then(({ canceled }) => {
+				if (canceled) return;
+
+				this.$root.api('notes/delete', {
+					noteId: this.appearNote.id
+				});
+
+				this.$root.post({ initialNote: this.appearNote, renote: this.appearNote.renote, reply: this.appearNote.reply });
+			});
+		},
+
 		toggleFavorite(favorite: boolean) {
 			this.$root.api(favorite ? 'notes/favorites/create' : 'notes/favorites/delete', {
 				noteId: this.appearNote.id
@@ -480,6 +505,11 @@ export default Vue.extend({
 					noteId: this.appearNote.id
 				});
 				menu = [{
+					type: 'link',
+					icon: faInfoCircle,
+					text: this.$t('details'),
+					to: '/notes/' + this.appearNote.id
+				}, null, {
 					icon: faCopy,
 					text: this.$t('copyContent'),
 					action: this.copyContent
@@ -487,11 +517,11 @@ export default Vue.extend({
 					icon: faLink,
 					text: this.$t('copyLink'),
 					action: this.copyLink
-				}, this.appearNote.uri ? {
+				}, (this.appearNote.url || this.appearNote.uri) ? {
 					icon: faExternalLinkSquareAlt,
 					text: this.$t('showOnRemote'),
 					action: () => {
-						window.open(this.appearNote.uri, '_blank');
+						window.open(this.appearNote.url || this.appearNote.uri, '_blank');
 					}
 				} : undefined,
 				null,
@@ -522,8 +552,22 @@ export default Vue.extend({
 					text: this.$t('pin'),
 					action: () => this.togglePin(true)
 				} : undefined,
+				...(this.$store.state.i.isModerator || this.$store.state.i.isAdmin ? [
+					null,
+					{
+						icon: faBullhorn,
+						text: this.$t('promote'),
+						action: this.promote
+					}]
+					: []
+				),
 				...(this.appearNote.userId == this.$store.state.i.id ? [
 					null,
+					{
+						icon: faEdit,
+						text: this.$t('deleteAndEdit'),
+						action: this.delEdit
+					},
 					{
 						icon: faTrashAlt,
 						text: this.$t('delete'),
@@ -541,11 +585,11 @@ export default Vue.extend({
 					icon: faLink,
 					text: this.$t('copyLink'),
 					action: this.copyLink
-				}, this.appearNote.uri ? {
+				}, (this.appearNote.url || this.appearNote.uri) ? {
 					icon: faExternalLinkSquareAlt,
 					text: this.$t('showOnRemote'),
 					action: () => {
-						window.open(this.appearNote.uri, '_blank');
+						window.open(this.appearNote.url || this.appearNote.uri, '_blank');
 					}
 				} : undefined]
 				.filter(x => x !== undefined);
@@ -614,6 +658,30 @@ export default Vue.extend({
 			});
 		},
 
+		async promote() {
+			const { canceled, result: days } = await this.$root.dialog({
+				title: this.$t('numberOfDays'),
+				input: { type: 'number' }
+			});
+
+			if (canceled) return;
+
+			this.$root.api('admin/promo/create', {
+				noteId: this.appearNote.id,
+				expiresAt: Date.now() + (86400000 * days)
+			}).then(() => {
+				this.$root.dialog({
+					type: 'success',
+					iconOnly: true, autoClose: true
+				});
+			}).catch(e => {
+				this.$root.dialog({
+					type: 'error',
+					text: e
+				});
+			});
+		},
+
 		focus() {
 			this.$el.focus();
 		},
@@ -637,6 +705,7 @@ export default Vue.extend({
 .note {
 	position: relative;
 	transition: box-shadow 0.1s ease;
+	overflow: hidden;
 
 	&.max-width_500px {
 		font-size: 0.9em;
@@ -702,15 +771,9 @@ export default Vue.extend({
 		opacity: 1;
 	}
 
-	> *:first-child {
-		border-radius: var(--radius) var(--radius) 0 0;
-	}
-
-	> *:last-child {
-		border-radius: 0 0 var(--radius) var(--radius);
-	}
-
-	> .pinned {
+	> .info {
+		display: flex;
+		align-items: center;
 		padding: 16px 32px 8px 32px;
 		line-height: 24px;
 		font-size: 90%;
@@ -724,10 +787,20 @@ export default Vue.extend({
 		> [data-icon] {
 			margin-right: 4px;
 		}
+
+		> .hide {
+			margin-left: auto;
+			color: inherit;
+		}
 	}
 
-	> .pinned + .article {
+	> .info + .article {
 		padding-top: 8px;
+	}
+
+	> .reply-to {
+		opacity: 0.7;
+		padding-bottom: 0;
 	}
 
 	> .renote {
@@ -882,6 +955,10 @@ export default Vue.extend({
 				opacity: 0.7;
 			}
 		}
+	}
+
+	> .reply {
+		border-top: solid 1px var(--divider);
 	}
 }
 </style>

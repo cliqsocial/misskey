@@ -20,7 +20,7 @@ export default (opts) => ({
 
 	computed: {
 		empty(): boolean {
-			return this.items.length == 0 && !this.fetching && this.inited;
+			return this.items.length === 0 && !this.fetching && this.inited;
 		},
 
 		error(): boolean {
@@ -31,6 +31,10 @@ export default (opts) => ({
 	watch: {
 		pagination() {
 			this.init();
+		},
+
+		queue() {
+			this.$emit('queue', this.queue.length);
 		}
 	},
 
@@ -58,6 +62,7 @@ export default (opts) => ({
 		},
 
 		async init() {
+			this.queue = [];
 			this.fetching = true;
 			if (opts.before) opts.before(this);
 			let params = typeof this.pagination.params === 'function' ? this.pagination.params(true) : this.pagination.params;
@@ -67,7 +72,7 @@ export default (opts) => ({
 				...params,
 				limit: this.pagination.noPaging ? (this.pagination.limit || 10) : (this.pagination.limit || 10) + 1,
 			}).then(items => {
-				if (!this.pagination.noPaging && (items.length === (this.pagination.limit || 10) + 1)) {
+				if (!this.pagination.noPaging && (items.length > (this.pagination.limit || 10))) {
 					items.pop();
 					this.items = this.pagination.reversed ? [...items].reverse() : items;
 					this.more = true;
@@ -103,7 +108,7 @@ export default (opts) => ({
 					untilId: this.items[this.items.length - 1].id,
 				}),
 			}).then(items => {
-				if (items.length === SECOND_FETCH_LIMIT + 1) {
+				if (items.length > SECOND_FETCH_LIMIT) {
 					items.pop();
 					this.items = this.pagination.reversed ? [...items].reverse().concat(this.items) : this.items.concat(items);
 					this.more = true;

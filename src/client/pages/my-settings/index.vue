@@ -13,6 +13,9 @@
 			<mk-switch v-model="$store.state.i.autoWatch" @change="onChangeAutoWatch">
 				{{ $t('autoNoteWatch') }}<template #desc>{{ $t('autoNoteWatchDescription') }}</template>
 			</mk-switch>
+			<mk-switch v-model="$store.state.i.injectFeaturedNote" @change="onChangeInjectFeaturedNote">
+				{{ $t('showFeaturedNotesInTimeline') }}
+			</mk-switch>
 		</div>
 		<div class="_content">
 			<mk-button @click="readAllNotifications">{{ $t('markAsReadAllNotifications') }}</mk-button>
@@ -29,7 +32,9 @@
 	<x-integration/>
 	<x-api/>
 
-	<mk-button @click="$root.signout()" primary style="margin: var(--margin) auto;">{{ $t('logout') }}</mk-button>
+	<router-link class="_panel _buttonPrimary" to="/my/apps" style="margin: var(--margin) auto;">{{ $t('installedApps') }}</router-link>
+
+	<button class="_panel _buttonPrimary" @click="$root.signout()" style="margin: var(--margin) auto;">{{ $t('logout') }}</button>
 </div>
 </template>
 
@@ -81,6 +86,12 @@ export default Vue.extend({
 		onChangeAutoWatch(v) {
 			this.$root.api('i/update', {
 				autoWatch: v
+			});
+		},
+
+		onChangeInjectFeaturedNote(v) {
+			this.$root.api('i/update', {
+				injectFeaturedNote: v
 			});
 		},
 

@@ -33,6 +33,10 @@ export const meta = {
 			validator: $.arr($.arr($.str))
 		},
 
+		excludeKeywords: {
+			validator: $.arr($.arr($.str))
+		},
+
 		users: {
 			validator: $.arr($.str)
 		},
@@ -78,7 +82,7 @@ export default define(meta, async (ps, user) => {
 			id: ps.userListId,
 			userId: user.id,
 		});
-	
+
 		if (userList == null) {
 			throw new ApiError(meta.errors.noSuchUserList);
 		}
@@ -87,7 +91,7 @@ export default define(meta, async (ps, user) => {
 			userGroupId: ps.userGroupId,
 			userId: user.id,
 		});
-	
+
 		if (userGroupJoining == null) {
 			throw new ApiError(meta.errors.noSuchUserGroup);
 		}
@@ -102,6 +106,7 @@ export default define(meta, async (ps, user) => {
 		userListId: userList ? userList.id : null,
 		userGroupJoiningId: userGroupJoining ? userGroupJoining.id : null,
 		keywords: ps.keywords,
+		excludeKeywords: ps.excludeKeywords,
 		users: ps.users,
 		caseSensitive: ps.caseSensitive,
 		withReplies: ps.withReplies,

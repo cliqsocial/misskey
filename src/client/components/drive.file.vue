@@ -105,16 +105,6 @@ export default Vue.extend({
 						text: this.$t('delete'),
 						icon: faTrashAlt,
 						action: this.deleteFile
-					}, null, {
-						type: 'nest',
-						text: this.$t('contextmenu.else-files'),
-						menu: [{
-							text: this.$t('contextmenu.set-as-avatar'),
-							action: this.setAsAvatar
-						}, {
-							text: this.$t('contextmenu.set-as-banner'),
-							action: this.setAsBanner
-						}]
 					}],
 					source: ev.currentTarget || ev.target,
 				});
@@ -149,9 +139,9 @@ export default Vue.extend({
 
 		rename() {
 			this.$root.dialog({
-				title: this.$t('contextmenu.rename-file'),
+				title: this.$t('renameFile'),
 				input: {
-					placeholder: this.$t('contextmenu.input-new-file-name'),
+					placeholder: this.$t('inputNewFileName'),
 					default: this.file.name,
 					allowEmpty: false
 				}
