@@ -7,7 +7,7 @@
 [![Dependencies](https://img.shields.io/david/syuilo/misskey.svg?style=for-the-badge&logo=npm)](https://david-dm.org/syuilo/misskey)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge&logo=github)](http://makeapullrequest.com)
 
-**A forever evolving, sophisticated microblogging platform.**
+**A sophisticated microblogging platform.**
 
 <p align="justify">
 <a href="https://join.misskey.page/">Misskey</a> is a decentralized microblogging platform born on Earth.
