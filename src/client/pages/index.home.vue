@@ -14,9 +14,12 @@
 		</button>
 	</portal>
 
+	<div class="new" v-if="queue > 0" :style="{ width: width + 'px' }"><button class="_buttonPrimary" @click="top()">{{ $t('newNoteRecived') }}</button></div>
+
 	<x-tutorial class="tutorial" v-if="$store.state.settings.tutorial != -1"/>
 
-	<x-timeline ref="tl" :key="src === 'list' ? `list:${list.id}` : src === 'antenna' ? `antenna:${antenna.id}` : src" :src="src" :list="list" :antenna="antenna" @before="before()" @after="after()"/>
+	<x-post-form class="post-form _panel" fixed v-if="$store.state.device.showFixedPostForm"/>
+	<x-timeline ref="tl" :key="src === 'list' ? `list:${list.id}` : src === 'antenna' ? `antenna:${antenna.id}` : src" :src="src" :list="list" :antenna="antenna" :sound="true" @before="before()" @after="after()" @queue="queueUpdated"/>
 </div>
 </template>
 
@@ -27,6 +30,7 @@ import { faComments } from '@fortawesome/free-regular-svg-icons';
 import Progress from '../scripts/loading';
 import XTimeline from '../components/timeline.vue';
 import XTutorial from './index.home.tutorial.vue';
+import XPostForm from '../components/post-form.vue';
 
 export default Vue.extend({
 	metaInfo() {
@@ -38,6 +42,7 @@ export default Vue.extend({
 	components: {
 		XTimeline,
 		XTutorial,
+		XPostForm,
 	},
 
 	props: {
@@ -53,6 +58,8 @@ export default Vue.extend({
 			list: null,
 			antenna: null,
 			menuOpened: false,
+			queue: 0,
+			width: 0,
 			faAngleDown, faAngleUp, faHome, faShareAlt, faGlobe, faComments, faListUl, faSatellite, faCircle
 		};
 	},
@@ -62,6 +69,10 @@ export default Vue.extend({
 			return {
 				't': this.focus
 			};
+		},
+
+		meta() {
+			return this.$store.state.instance.meta;
 		},
 	},
 
@@ -91,6 +102,10 @@ export default Vue.extend({
 		}
 	},
 
+	mounted() {
+		this.width = this.$el.offsetWidth;
+	},
+
 	methods: {
 		before() {
 			Progress.start();
@@ -100,7 +115,17 @@ export default Vue.extend({
 			Progress.done();
 		},
 
+		queueUpdated(q) {
+			if (this.$el.offsetWidth !== 0) this.width = this.$el.offsetWidth;
+			this.queue = q;
+		},
+
+		top() {
+			window.scroll({ top: 0, behavior: 'instant' });
+		},
+
 		async choose(ev) {
+			if (this.meta == null) return;
 			this.menuOpened = true;
 			const [antennas, lists] = await Promise.all([
 				this.$root.api('antennas/list'),
@@ -128,15 +153,15 @@ export default Vue.extend({
 					text: this.$t('_timelines.home'),
 					icon: faHome,
 					action: () => { this.setSrc('home') }
-				}, {
+				}, this.meta.disableLocalTimeline && !this.$store.state.i.isModerator && !this.$store.state.i.isAdmin ? undefined : {
 					text: this.$t('_timelines.local'),
 					icon: faComments,
 					action: () => { this.setSrc('local') }
-				}, {
+				}, this.meta.disableLocalTimeline && !this.$store.state.i.isModerator && !this.$store.state.i.isAdmin ? undefined : {
 					text: this.$t('_timelines.social'),
 					icon: faShareAlt,
 					action: () => { this.setSrc('social') }
-				}, {
+				}, this.meta.disableGlobalTimeline && !this.$store.state.i.isModerator && !this.$store.state.i.isAdmin ? undefined : {
 					text: this.$t('_timelines.global'),
 					icon: faGlobe,
 					action: () => { this.setSrc('global') }
@@ -169,7 +194,24 @@ export default Vue.extend({
 
 <style lang="scss" scoped>
 .mk-home {
+	> .new {
+		position: fixed;
+		z-index: 1000;
+
+		> button {
+			display: block;
+			margin: 0 auto;
+			padding: 8px 16px;
+			border-radius: 32px;
+		}
+	}
+
 	> .tutorial {
+		margin-bottom: var(--margin);
+	}
+
+	> .post-form {
+		position: relative;
 		margin-bottom: var(--margin);
 	}
 }

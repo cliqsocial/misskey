@@ -5,6 +5,9 @@
 
 	<div class="_card" v-if="page" :key="page.id">
 		<div class="_title">{{ page.title }}</div>
+		<div class="banner">
+			<img :src="page.eyeCatchingImage.url" v-if="page.eyeCatchingImageId"/>
+		</div>
 		<div class="_content">
 			<x-page :page="page"/>
 		</div>
@@ -17,8 +20,8 @@
 			</template>
 			<router-link :to="`./${page.name}/view-source`">{{ $t('_pages.viewSource') }}</router-link>
 			<div class="like">
-				<button @click="unlike()" v-if="page.isLiked" :title="$t('_pages.unlike')"><fa :icon="faHeartS"/></button>
-				<button @click="like()" v-else :title="$t('_pages.like')"><fa :icon="faHeart"/></button>
+				<button class="_button" @click="unlike()" v-if="page.isLiked" :title="$t('_pages.unlike')"><fa :icon="faHeartS"/></button>
+				<button class="_button" @click="like()" v-else :title="$t('_pages.like')"><fa :icon="faHeartR"/></button>
 				<span class="count" v-if="page.likedCount > 0">{{ page.likedCount }}</span>
 			</div>
 		</div>
@@ -28,6 +31,8 @@
 
 <script lang="ts">
 import Vue from 'vue';
+import { faHeart as faHeartS } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as faHeartR } from '@fortawesome/free-regular-svg-icons';
 import XPage from '../components/page/page.vue';
 
 export default Vue.extend({
@@ -49,6 +54,7 @@ export default Vue.extend({
 	data() {
 		return {
 			page: null,
+			faHeartS, faHeartR
 		};
 	},
 
@@ -102,7 +108,7 @@ export default Vue.extend({
 			}).then(() => {
 				this.$root.dialog({
 					type: 'success',
-					splash: true
+					iconOnly: true, autoClose: true
 				});
 			});
 		}
@@ -112,6 +118,13 @@ export default Vue.extend({
 
 <style lang="scss" scoped>
 .xcukqgmh {
-
+	> ._card > .banner {
+		> img {
+			display: block;
+			width: 100%;
+			height: 120px;
+			object-fit: cover;
+		}
+	}
 }
 </style>

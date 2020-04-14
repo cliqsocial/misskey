@@ -23,7 +23,8 @@ import Vue from 'vue';
 import { faExternalLinkSquareAlt } from '@fortawesome/free-solid-svg-icons';
 import { toUnicode as decodePunycode } from 'punycode';
 import { url as local } from '../config';
-import XUrlPreview from './url-preview-popup.vue';
+import MkUrlPreview from './url-preview-popup.vue';
+import { isDeviceTouch } from '../scripts/is-device-touch';
 
 export default Vue.extend({
 	props: {
@@ -51,6 +52,7 @@ export default Vue.extend({
 			target: self ? null : '_blank',
 			showTimer: null,
 			hideTimer: null,
+			checkTimer: null,
 			preview: null,
 			faExternalLinkSquareAlt
 		};
@@ -69,7 +71,7 @@ export default Vue.extend({
 			if (!document.body.contains(this.$el)) return;
 			if (this.preview) return;
 
-			this.preview = new XUrlPreview({
+			this.preview = new MkUrlPreview({
 				parent: this,
 				propsData: {
 					url: this.url,
@@ -78,19 +80,26 @@ export default Vue.extend({
 			}).$mount();
 
 			document.body.appendChild(this.preview.$el);
+
+			this.checkTimer = setInterval(() => {
+				if (!document.body.contains(this.$el)) this.closePreview();
+			}, 1000);
 		},
 		closePreview() {
 			if (this.preview) {
+				clearInterval(this.checkTimer);
 				this.preview.destroyDom();
 				this.preview = null;
 			}
 		},
 		onMouseover() {
+			if (isDeviceTouch()) return;
 			clearTimeout(this.showTimer);
 			clearTimeout(this.hideTimer);
 			this.showTimer = setTimeout(this.showPreview, 500);
 		},
 		onMouseleave() {
+			if (isDeviceTouch()) return;
 			clearTimeout(this.showTimer);
 			clearTimeout(this.hideTimer);
 			this.hideTimer = setTimeout(this.closePreview, 500);

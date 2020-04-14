@@ -4,8 +4,6 @@ import define from '../../define';
 import { NoteFavorites, NoteWatchings } from '../../../../models';
 
 export const meta = {
-	stability: 'stable',
-
 	desc: {
 		'ja-JP': '指定した投稿の状態を取得します。',
 		'en-US': 'Get state of a note.'
@@ -30,15 +28,15 @@ export default define(meta, async (ps, user) => {
 	const [favorite, watching] = await Promise.all([
 		NoteFavorites.count({
 			where: {
-			userId: user.id,
-			noteId: ps.noteId
+				userId: user.id,
+				noteId: ps.noteId
 			},
 			take: 1
 		}),
 		NoteWatchings.count({
 			where: {
-			userId: user.id,
-			noteId: ps.noteId
+				userId: user.id,
+				noteId: ps.noteId
 			},
 			take: 1
 		})

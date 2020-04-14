@@ -48,8 +48,21 @@ export async function checkHitAntenna(antenna: Antenna, note: Note, noteUser: Us
 					? note.text!.includes(keyword)
 					: note.text!.toLowerCase().includes(keyword.toLowerCase())
 			));
-		
+
 		if (!matched) return false;
+	}
+
+	if (antenna.excludeKeywords.length > 0) {
+		if (note.text == null) return false;
+
+		const matched = antenna.excludeKeywords.some(keywords =>
+			keywords.every(keyword =>
+				antenna.caseSensitive
+					? note.text!.includes(keyword)
+					: note.text!.toLowerCase().includes(keyword.toLowerCase())
+			));
+
+		if (matched) return false;
 	}
 
 	if (antenna.withFile) {

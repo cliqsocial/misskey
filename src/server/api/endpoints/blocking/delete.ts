@@ -8,14 +8,12 @@ import { getUser } from '../../common/getters';
 import { Blockings, Users } from '../../../../models';
 
 export const meta = {
-	stability: 'stable',
-
 	desc: {
 		'ja-JP': '指定したユーザーのブロックを解除します。',
 		'en-US': 'Unblock a user.'
 	},
 
-	tags: ['blocking', 'users'],
+	tags: ['account'],
 
 	limit: {
 		duration: ms('1hour'),

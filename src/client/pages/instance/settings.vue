@@ -61,10 +61,10 @@
 		<div class="_content">
 			<mk-switch v-model="enableServiceWorker">{{ $t('enableServiceworker') }}<template #desc>{{ $t('serviceworkerInfo') }}</template></mk-switch>
 			<template v-if="enableServiceWorker">
-				<mk-horizon-group inputs class="fit-bottom">
+				<div class="_inputs">
 					<mk-input v-model="swPublicKey" :disabled="!enableServiceWorker"><template #icon><fa :icon="faKey"/></template>Public key</mk-input>
 					<mk-input v-model="swPrivateKey" :disabled="!enableServiceWorker"><template #icon><fa :icon="faKey"/></template>Private key</mk-input>
-				</mk-horizon-group>
+				</div>
 			</template>
 		</div>
 		<div class="_footer">
@@ -91,6 +91,33 @@
 			<mk-switch v-model="proxyRemoteFiles">{{ $t('proxyRemoteFiles') }}<template #desc>{{ $t('proxyRemoteFilesDescription') }}</template></mk-switch>
 			<mk-input v-model="localDriveCapacityMb" type="number">{{ $t('driveCapacityPerLocalAccount') }}<template #suffix>MB</template><template #desc>{{ $t('inMb') }}</template></mk-input>
 			<mk-input v-model="remoteDriveCapacityMb" type="number" :disabled="!cacheRemoteFiles" style="margin-bottom: 0;">{{ $t('driveCapacityPerRemoteAccount') }}<template #suffix>MB</template><template #desc>{{ $t('inMb') }}</template></mk-input>
+		</div>
+		<div class="_footer">
+			<mk-button primary @click="save(true)"><fa :icon="faSave"/> {{ $t('save') }}</mk-button>
+		</div>
+	</section>
+
+	<section class="_card">
+		<div class="_title"><fa :icon="faCloud"/> {{ $t('objectStorage') }}</div>
+		<div class="_content">
+			<mk-switch v-model="useObjectStorage">{{ $t('useObjectStorage') }}</mk-switch>
+			<template v-if="useObjectStorage">
+				<mk-input v-model="objectStorageBaseUrl" :disabled="!useObjectStorage">{{ $t('objectStorageBaseUrl') }}<template #desc>{{ $t('objectStorageBaseUrlDesc') }}</template></mk-input>
+				<div class="_inputs">
+					<mk-input v-model="objectStorageBucket" :disabled="!useObjectStorage">{{ $t('objectStorageBucket') }}<template #desc>{{ $t('objectStorageBucketDesc') }}</template></mk-input>
+					<mk-input v-model="objectStoragePrefix" :disabled="!useObjectStorage">{{ $t('objectStoragePrefix') }}<template #desc>{{ $t('objectStoragePrefixDesc') }}</template></mk-input>
+				</div>
+				<mk-input v-model="objectStorageEndpoint" :disabled="!useObjectStorage">{{ $t('objectStorageEndpoint') }}<template #desc>{{ $t('objectStorageEndpointDesc') }}</template></mk-input>
+				<div class="_inputs">
+					<mk-input v-model="objectStorageRegion" :disabled="!useObjectStorage">{{ $t('objectStorageRegion') }}<template #desc>{{ $t('objectStorageRegionDesc') }}</template></mk-input>
+				</div>
+				<div class="_inputs">
+					<mk-input v-model="objectStorageAccessKey" :disabled="!useObjectStorage"><template #icon><fa :icon="faKey"/></template>Access key</mk-input>
+					<mk-input v-model="objectStorageSecretKey" :disabled="!useObjectStorage"><template #icon><fa :icon="faKey"/></template>Secret key</mk-input>
+				</div>
+				<mk-switch v-model="objectStorageUseSSL" :disabled="!useObjectStorage">{{ $t('objectStorageUseSSL') }}<template #desc>{{ $t('objectStorageUseSSLDesc') }}</template></mk-switch>
+				<mk-switch v-model="objectStorageUseProxy" :disabled="!useObjectStorage">{{ $t('objectStorageUseProxy') }}<template #desc>{{ $t('objectStorageUseProxyDesc') }}</template></mk-switch>
+			</template>
 		</div>
 		<div class="_footer">
 			<mk-button primary @click="save(true)"><fa :icon="faSave"/> {{ $t('save') }}</mk-button>
@@ -213,6 +240,17 @@ export default Vue.extend({
 			enableServiceWorker: false,
 			swPublicKey: null,
 			swPrivateKey: null,
+			useObjectStorage: false,
+			objectStorageBaseUrl: null,
+			objectStorageBucket: null,
+			objectStoragePrefix: null,
+			objectStorageEndpoint: null,
+			objectStorageRegion: null,
+			objectStoragePort: null,
+			objectStorageAccessKey: null,
+			objectStorageSecretKey: null,
+			objectStorageUseSSL: false,
+			objectStorageUseProxy: false,
 			enableTwitterIntegration: false,
 			twitterConsumerKey: null,
 			twitterConsumerSecret: null,
@@ -257,6 +295,17 @@ export default Vue.extend({
 		this.enableServiceWorker = this.meta.enableServiceWorker;
 		this.swPublicKey = this.meta.swPublickey;
 		this.swPrivateKey = this.meta.swPrivateKey;
+		this.useObjectStorage = this.meta.useObjectStorage;
+		this.objectStorageBaseUrl = this.meta.objectStorageBaseUrl;
+		this.objectStorageBucket = this.meta.objectStorageBucket;
+		this.objectStoragePrefix = this.meta.objectStoragePrefix;
+		this.objectStorageEndpoint = this.meta.objectStorageEndpoint;
+		this.objectStorageRegion = this.meta.objectStorageRegion;
+		this.objectStoragePort = this.meta.objectStoragePort;
+		this.objectStorageAccessKey = this.meta.objectStorageAccessKey;
+		this.objectStorageSecretKey = this.meta.objectStorageSecretKey;
+		this.objectStorageUseSSL = this.meta.objectStorageUseSSL;
+		this.objectStorageUseProxy = this.meta.objectStorageUseProxy;
 		this.enableTwitterIntegration = this.meta.enableTwitterIntegration;
 		this.twitterConsumerKey = this.meta.twitterConsumerKey;
 		this.twitterConsumerSecret = this.meta.twitterConsumerSecret;
@@ -299,6 +348,20 @@ export default Vue.extend({
 	},
 
 	methods: {
+		invite() {
+			this.$root.api('admin/invite').then(x => {
+				this.$root.dialog({
+					type: 'info',
+					text: x.code
+				});
+			}).catch(e => {
+				this.$root.dialog({
+					type: 'error',
+					text: e
+				});
+			});
+		},
+
 		addPinUser() {
 			this.$root.new(MkUserSelect, {}).$once('selected', user => {
 				this.pinnedUsers = this.pinnedUsers.trim();
@@ -341,6 +404,17 @@ export default Vue.extend({
 				enableServiceWorker: this.enableServiceWorker,
 				swPublicKey: this.swPublicKey,
 				swPrivateKey: this.swPrivateKey,
+				useObjectStorage: this.useObjectStorage,
+				objectStorageBaseUrl: this.objectStorageBaseUrl ? this.objectStorageBaseUrl : null,
+				objectStorageBucket: this.objectStorageBucket ? this.objectStorageBucket : null,
+				objectStoragePrefix: this.objectStoragePrefix ? this.objectStoragePrefix : null,
+				objectStorageEndpoint: this.objectStorageEndpoint ? this.objectStorageEndpoint : null,
+				objectStorageRegion: this.objectStorageRegion ? this.objectStorageRegion : null,
+				objectStoragePort: this.objectStoragePort ? this.objectStoragePort : null,
+				objectStorageAccessKey: this.objectStorageAccessKey ? this.objectStorageAccessKey : null,
+				objectStorageSecretKey: this.objectStorageSecretKey ? this.objectStorageSecretKey : null,
+				objectStorageUseSSL: this.objectStorageUseSSL,
+				objectStorageUseProxy: this.objectStorageUseProxy,
 				enableTwitterIntegration: this.enableTwitterIntegration,
 				twitterConsumerKey: this.twitterConsumerKey,
 				twitterConsumerSecret: this.twitterConsumerSecret,
